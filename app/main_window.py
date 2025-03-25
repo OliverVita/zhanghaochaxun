@@ -8,7 +8,7 @@ from PyQt5.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
                            QCheckBox, QGroupBox, QSplitter, QApplication,
                            QTextEdit, QComboBox, QScrollArea, QFrame, QGridLayout,
                            QInputDialog, QMenu, QAction)
-from PyQt5.QtCore import Qt, QTimer, pyqtSlot, QEvent
+from PyQt5.QtCore import Qt, QTimer, pyqtSlot, QEvent, QObject, QSize
 from PyQt5.QtGui import QFont, QColor, QPalette, QIcon, QKeySequence, QIntValidator
 
 from app.database import Database
@@ -16,6 +16,57 @@ from app.otp_service import OTPService
 from app.main_window_otp import MainWindowOTPService
 from app.dialogs import (AddFieldDialog, AddAccountDialog, EditAccountDialog, 
                        ImportDialog, ConfirmDialog)
+
+# 自定义表格类，处理鼠标事件
+class CustomTableWidget(QTableWidget):
+    """自定义表格控件，正确处理鼠标事件和双击事件"""
+    
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.start_selection = None
+        
+    def mousePressEvent(self, event):
+        """处理鼠标按下事件"""
+        if event.button() == Qt.LeftButton:
+            # 获取点击的单元格位置
+            pos = event.pos()
+            item = self.itemAt(pos)
+            if item:
+                # 记录起始选择位置
+                self.start_selection = (item.row(), item.column())
+                # 清除之前的选择
+                self.clearSelection()
+                # 选择当前单元格
+                item.setSelected(True)
+        # 确保调用原始的mousePressEvent方法，以便正确处理双击
+        super().mousePressEvent(event)
+        
+    def mouseMoveEvent(self, event):
+        """处理鼠标移动事件"""
+        if self.start_selection:
+            # 获取当前鼠标位置对应的单元格
+            pos = event.pos()
+            item = self.itemAt(pos)
+            if item:
+                # 获取起始和结束位置
+                start_row, start_col = self.start_selection
+                end_row, end_col = item.row(), item.column()
+                
+                # 清除之前的选择
+                self.clearSelection()
+                
+                # 选择范围内的所有单元格
+                for row in range(min(start_row, end_row), max(start_row, end_row) + 1):
+                    for col in range(min(start_col, end_col), max(start_col, end_col) + 1):
+                        item = self.item(row, col)
+                        if item:
+                            item.setSelected(True)
+        super().mouseMoveEvent(event)
+        
+    def mouseReleaseEvent(self, event):
+        """处理鼠标释放事件"""
+        self.start_selection = None
+        super().mouseReleaseEvent(event)
 
 class MainWindow(QMainWindow):
     def __init__(self, parent=None):
@@ -287,7 +338,7 @@ class MainWindow(QMainWindow):
         results_layout.addLayout(sort_layout)
         
         # 结果表格
-        self.results_table = QTableWidget()
+        self.results_table = CustomTableWidget()
         self.results_table.setEditTriggers(QTableWidget.NoEditTriggers)
         # 修改选择模式为扩展选择
         self.results_table.setSelectionMode(QTableWidget.ExtendedSelection)
@@ -305,11 +356,6 @@ class MainWindow(QMainWindow):
         
         # 添加双击复制功能
         self.results_table.cellDoubleClicked.connect(self.copy_cell_content)
-        
-        # 添加鼠标按下事件处理
-        self.results_table.mousePressEvent = self.handle_table_mouse_press
-        self.results_table.mouseMoveEvent = self.handle_table_mouse_move
-        self.results_table.mouseReleaseEvent = self.handle_table_mouse_release
         
         results_layout.addWidget(self.results_table)
         
@@ -453,7 +499,7 @@ class MainWindow(QMainWindow):
         accounts_layout = QVBoxLayout(accounts_group)
         
         # 账号列表表格
-        self.accounts_table = QTableWidget()
+        self.accounts_table = CustomTableWidget()
         self.accounts_table.setEditTriggers(QTableWidget.NoEditTriggers)
         self.accounts_table.setSelectionBehavior(QTableWidget.SelectRows)
         self.accounts_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
@@ -1369,46 +1415,3 @@ class MainWindow(QMainWindow):
                         item.setData(Qt.UserRole, data['otp'])
                         item.setForeground(data['color'])
                         self.results_table.setItem(row, col, item) 
-    
-    def handle_table_mouse_press(self, event):
-        """处理表格鼠标按下事件"""
-        if event.button() == Qt.LeftButton:
-            # 获取点击的单元格位置
-            pos = event.pos()
-            item = self.results_table.itemAt(pos)
-            if item:
-                # 记录起始选择位置
-                self.start_selection = (item.row(), item.column())
-                # 清除之前的选择
-                self.results_table.clearSelection()
-                # 选择当前单元格
-                item.setSelected(True)
-        super().mousePressEvent(event)
-
-    def handle_table_mouse_move(self, event):
-        """处理表格鼠标移动事件"""
-        if hasattr(self, 'start_selection') and self.start_selection:
-            # 获取当前鼠标位置对应的单元格
-            pos = event.pos()
-            item = self.results_table.itemAt(pos)
-            if item:
-                # 获取起始和结束位置
-                start_row, start_col = self.start_selection
-                end_row, end_col = item.row(), item.column()
-                
-                # 清除之前的选择
-                self.results_table.clearSelection()
-                
-                # 选择范围内的所有单元格
-                for row in range(min(start_row, end_row), max(start_row, end_row) + 1):
-                    for col in range(min(start_col, end_col), max(start_col, end_col) + 1):
-                        item = self.results_table.item(row, col)
-                        if item:
-                            item.setSelected(True)
-        super().mouseMoveEvent(event)
-
-    def handle_table_mouse_release(self, event):
-        """处理表格鼠标释放事件"""
-        if hasattr(self, 'start_selection'):
-            delattr(self, 'start_selection')
-        super().mouseReleaseEvent(event) 
