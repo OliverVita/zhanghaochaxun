@@ -118,6 +118,16 @@ class MainWindow(QMainWindow):
         """)
         main_layout.addWidget(title_label)
         
+        # 添加作者信息标签
+        author_label = QLabel("by:Neuer")
+        author_label.setAlignment(Qt.AlignCenter)
+        author_label.setStyleSheet("""
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 10px;
+        """)
+        main_layout.addWidget(author_label)
+        
         # 创建选项卡部件
         self.tab_widget = QTabWidget()
         main_layout.addWidget(self.tab_widget)

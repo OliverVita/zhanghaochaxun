@@ -1,3 +1,10 @@
+欢迎捐款：
+Tron：TF4uQYmwbxv3z4v7DqGNmXf5V31AfburBq
+Sol：48UmuXnw7GfPHRxRLXb2Q6AV4HTCnigtaGG1hssCQhFa
+BNB&ETH：0xde49ac6d927540d82baf52435d7693a2629bc54b
+BTC：bc1p3znwjh0zx4v02vttm8499dghhyll7vzjw63429wsdvuuk5akaepsg4l3h2
+
+
 # 账号查询管理系统
 
 这是一个功能全面的账号查询和管理系统，采用Python语言开发，具有友好的图形界面和强大的功能。
